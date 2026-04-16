@@ -10,7 +10,7 @@ This repository now contains **Module 1: Foundation + Marketing + Reservation AP
 - ✅ Functional UI landing page based on your exact marketing copy.
 - ✅ Reservation form page (`/reservations`) connected to a backend API route.
 - ✅ Prisma schema (Restaurant, Table, Reservation) with seed data.
-- ✅ Supabase SSR server client helper for upcoming auth modules.
+- ✅ Supabase Next.js App Router SSR setup (`client`, `server`, `proxy`) per latest docs.
 - ✅ Module plan documented for iterative delivery.
 
 ---
@@ -46,8 +46,14 @@ This repository now contains **Module 1: Foundation + Marketing + Reservation AP
   - Shared Zod validation schema and booking types.
 - `lib/prisma.ts`
   - Prisma client singleton (safe for dev hot reload).
-- `lib/supabase-server.ts`
-  - Supabase SSR server client based on cookies.
+- `lib/supabase/client.ts`
+  - Browser Supabase client for Client Components.
+- `lib/supabase/server.ts`
+  - Server Supabase client for Server Components, Actions, and Route Handlers.
+- `lib/supabase/proxy.ts`
+  - Session refresh utility used by `proxy.ts` to refresh auth tokens with `getClaims()`.
+- `proxy.ts`
+  - App Router proxy entry point and matcher for auth cookie refresh.
 - `prisma/schema.prisma`
   - Database models and enums.
 - `prisma/seed.ts`
@@ -76,7 +82,7 @@ This repository now contains **Module 1: Foundation + Marketing + Reservation AP
    ```bash
    cp .env.example .env
    ```
-3. Run Prisma migration + generate + seed (after DB is available):
+3. Run Prisma 7 generation + migration + seed (after DB is available):
    ```bash
    npm run prisma:generate
    npm run prisma:migrate
