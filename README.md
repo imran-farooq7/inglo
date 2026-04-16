@@ -1,74 +1,55 @@
 # Inglo Smart Reservations (Module-Based Build)
 
-This repository now contains **Module 1: Foundation + Marketing + Reservation API V1**.
+## Progress summary before Module 2
+- ✅ Module 1 completed:
+  - Next.js App Router + TypeScript foundation
+  - Marketing homepage (`/`)
+  - Reservation page (`/reservations`)
+  - Reservation API (`GET` + `POST`)
+  - Prisma schema + seed data
+  - Prisma 7 + Supabase SSR baseline setup
 
-## Progress summary (before Module 1)
-- Completed so far: _none_ (fresh start).
-
-## Progress summary (after Module 1)
-- ✅ Next.js App Router project scaffolded with TypeScript and linting.
-- ✅ Functional UI landing page based on your exact marketing copy.
-- ✅ Reservation form page (`/reservations`) connected to a backend API route.
-- ✅ Prisma schema (Restaurant, Table, Reservation) with seed data.
-- ✅ Supabase Next.js App Router SSR setup (`client`, `server`, `proxy`) per latest docs.
-- ✅ Module plan documented for iterative delivery.
-
----
-
-## Stack and why it is used
-- **Next.js (App Router)**: frontend + backend route handlers in one codebase.
-- **Supabase**: Postgres hosting, auth, and policy-ready platform.
-- **Prisma**: type-safe database model and query layer.
+## Progress summary after Module 2
+- ✅ Supabase auth flows (sign up, sign in, sign out) via Server Actions.
+- ✅ Protected dashboard route (`/dashboard`) with SSR user guard.
+- ✅ App-level auth-aware navigation (`AuthStatus`) in layout.
+- ✅ Session-aware reservation form (auto-upgrades booking type to logged-in when authenticated).
+- ✅ Auth session endpoint (`/api/auth/user`) for client-safe session context.
 
 ---
 
-## Project structure and component usage
+## Structure and where each component is used
 
 - `app/layout.tsx`
-  - Global shell (root layout) for all pages.
-- `app/page.tsx`
-  - Home route (`/`) that renders `MarketingContent`.
-- `components/marketing-content.tsx`
-  - Landing page sections:
-    - Hero
-    - Product fit badges
-    - Reservation management highlights
-    - 3-step workflow cards
-- `app/reservations/page.tsx`
-  - Reservation page wrapper that renders `ReservationForm`.
+  - Global app shell + top navigation.
+  - Renders `AuthStatus` in every page.
+- `components/auth/auth-status.tsx`
+  - Server component that shows auth links for guests and dashboard/sign-out for signed-in users.
+- `app/auth/actions.ts`
+  - Server Actions for `signInAction`, `signUpAction`, `signOutAction`.
+- `app/auth/sign-in/page.tsx`
+  - Sign-in page route using reusable `AuthForm`.
+- `app/auth/sign-up/page.tsx`
+  - Sign-up page route using reusable `AuthForm`.
+- `components/auth/auth-form.tsx`
+  - Shared auth UI component for both sign-in and sign-up pages.
+- `app/dashboard/page.tsx`
+  - Protected SSR page; redirects unauthenticated users to sign-in.
+- `app/api/auth/user/route.ts`
+  - Returns lightweight authenticated user payload for client components.
 - `components/reservation-form.tsx`
-  - Client component that submits booking payload to `POST /api/reservations`.
-- `app/api/reservations/route.ts`
-  - Backend route handlers:
-    - `POST`: validate + create reservation
-    - `GET`: list reservations
-- `lib/reservation-schema.ts`
-  - Shared Zod validation schema and booking types.
-- `lib/prisma.ts`
-  - Prisma client singleton (safe for dev hot reload).
-- `lib/supabase/client.ts`
-  - Browser Supabase client for Client Components.
-- `lib/supabase/server.ts`
-  - Server Supabase client for Server Components, Actions, and Route Handlers.
-- `lib/supabase/proxy.ts`
-  - Session refresh utility used by `proxy.ts` to refresh auth tokens with `getClaims()`.
-- `proxy.ts`
-  - App Router proxy entry point and matcher for auth cookie refresh.
-- `prisma/schema.prisma`
-  - Database models and enums.
-- `prisma/seed.ts`
-  - Demo seed for one restaurant, tables, and one reservation.
+  - Uses `/api/auth/user` to detect user session and adapt booking defaults.
 
 ---
 
-## Module roadmap
+## Current module roadmap
 
-1. **Module 1 (done)**: foundation, marketing pages, reservation CRUD entrypoint.
-2. **Module 2**: authentication (guest vs logged-in), Supabase auth flows.
-3. **Module 3**: smart table availability engine and conflict checking.
-4. **Module 4**: restaurant dashboard (calendar/slots/table view).
-5. **Module 5**: role-based staff tools and premium booking rules.
-6. **Module 6**: analytics and optimization suggestions.
+1. ✅ Module 1: foundation, marketing pages, reservation CRUD entrypoint.
+2. ✅ Module 2: authentication (guest vs logged-in), Supabase auth flows.
+3. ⏳ Module 3: smart table availability engine and conflict checking.
+4. ⏳ Module 4: restaurant dashboard reservation calendar/table management.
+5. ⏳ Module 5: role-based staff tools and premium booking rules.
+6. ⏳ Module 6: analytics and optimization suggestions.
 
 ---
 
@@ -82,18 +63,23 @@ This repository now contains **Module 1: Foundation + Marketing + Reservation AP
    ```bash
    cp .env.example .env
    ```
-3. Run Prisma 7 generation + migration + seed (after DB is available):
+3. Add this optional redirect URL setting for auth emails:
+   ```bash
+   NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+   ```
+4. Run Prisma generate + migration + seed:
    ```bash
    npm run prisma:generate
    npm run prisma:migrate
    npm run prisma:seed
    ```
-4. Start app:
+5. Start app:
    ```bash
    npm run dev
    ```
 
 Open:
 - `http://localhost:3000/`
-- `http://localhost:3000/reservations`
-
+- `http://localhost:3000/auth/sign-in`
+- `http://localhost:3000/auth/sign-up`
+- `http://localhost:3000/dashboard`

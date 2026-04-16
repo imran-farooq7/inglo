@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { bookingTypes } from '@/lib/reservation-schema';
 
 type ReservationApiResponse = {
@@ -8,11 +8,17 @@ type ReservationApiResponse = {
   status: 'confirmed';
 };
 
+type SessionUser = {
+  id: string;
+  email?: string;
+};
+
 const toIsoTime = (rawValue: string) => new Date(rawValue).toISOString();
 
 export const ReservationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
 
   const defaultDatetime = useMemo(() => {
     const now = new Date();
@@ -21,16 +27,32 @@ export const ReservationForm = () => {
     return now.toISOString().slice(0, 16);
   }, []);
 
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const response = await fetch('/api/auth/user');
+        const payload = (await response.json()) as { user: SessionUser | null };
+        setSessionUser(payload.user);
+      } catch {
+        setSessionUser(null);
+      }
+    };
+
+    void loadSession();
+  }, []);
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
+    const bookingTypeValue = String(formData.get('bookingType'));
+
     const payload = {
       restaurantSlug: String(formData.get('restaurantSlug')),
       tableName: String(formData.get('tableName')),
-      bookingType: String(formData.get('bookingType')),
+      bookingType: sessionUser && bookingTypeValue === 'guest' ? 'logged_in' : bookingTypeValue,
       guestName: String(formData.get('guestName')),
-      guestEmail: String(formData.get('guestEmail')),
+      guestEmail: sessionUser?.email ?? String(formData.get('guestEmail')),
       partySize: Number(formData.get('partySize')),
       reservationAt: toIsoTime(String(formData.get('reservationAt'))),
       notes: String(formData.get('notes') ?? ''),
@@ -66,7 +88,7 @@ export const ReservationForm = () => {
     <form className="form" onSubmit={onSubmit}>
       <input name="restaurantSlug" placeholder="Restaurant slug" defaultValue="inglo-demo" required />
       <input name="tableName" placeholder="Table name" defaultValue="T1" required />
-      <select name="bookingType" defaultValue={bookingTypes[0]}>
+      <select name="bookingType" defaultValue={sessionUser ? 'logged_in' : bookingTypes[0]}>
         {bookingTypes.map((type) => (
           <option key={type} value={type}>
             {type}
@@ -74,13 +96,21 @@ export const ReservationForm = () => {
         ))}
       </select>
       <input name="guestName" placeholder="Guest full name" required />
-      <input name="guestEmail" type="email" placeholder="Guest email" required />
+      <input
+        name="guestEmail"
+        type="email"
+        placeholder="Guest email"
+        defaultValue={sessionUser?.email ?? ''}
+        readOnly={Boolean(sessionUser?.email)}
+        required
+      />
       <input name="partySize" type="number" min={1} max={20} defaultValue={2} required />
       <input name="reservationAt" type="datetime-local" defaultValue={defaultDatetime} required />
       <input name="notes" placeholder="Optional notes" />
       <button disabled={isSubmitting} type="submit">
         {isSubmitting ? 'Confirming...' : 'Confirm reservation'}
       </button>
+      {sessionUser ? <p>Logged in booking detected. Email is locked to your account.</p> : null}
       {message ? <p>{message}</p> : null}
     </form>
   );
