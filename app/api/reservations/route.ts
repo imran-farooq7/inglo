@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { reservationInputSchema } from '@/lib/reservation-schema';
 import { canCreateReservation } from '@/lib/availability';
 
