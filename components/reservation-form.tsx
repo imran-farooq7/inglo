@@ -13,12 +13,27 @@ type SessionUser = {
   email?: string;
 };
 
+type AvailabilityTable = {
+  id: string;
+  name: string;
+  capacity: number;
+};
+
+type AvailabilityResponse = {
+  availableTables: AvailabilityTable[];
+  unavailableTables: AvailabilityTable[];
+};
+
 const toIsoTime = (rawValue: string) => new Date(rawValue).toISOString();
 
 export const ReservationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [availabilityMessage, setAvailabilityMessage] = useState('');
+  const [availableTables, setAvailableTables] = useState<AvailabilityTable[]>([]);
+  const [selectedTable, setSelectedTable] = useState('');
+  const [partySize, setPartySize] = useState(2);
 
   const defaultDatetime = useMemo(() => {
     const now = new Date();
@@ -26,6 +41,8 @@ export const ReservationForm = () => {
     now.setHours(now.getHours() + 2);
     return now.toISOString().slice(0, 16);
   }, []);
+
+  const [reservationAtInput, setReservationAtInput] = useState(defaultDatetime);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -41,6 +58,49 @@ export const ReservationForm = () => {
     void loadSession();
   }, []);
 
+  useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const query = new URLSearchParams({
+          restaurantSlug: 'inglo-demo',
+          reservationAt: toIsoTime(reservationAtInput),
+          partySize: String(partySize),
+        });
+
+        const response = await fetch(`/api/availability?${query.toString()}`);
+
+        if (!response.ok) {
+          setAvailableTables([]);
+          setSelectedTable('');
+          setAvailabilityMessage('Unable to load available tables for the selected slot.');
+          return;
+        }
+
+        const payload = (await response.json()) as AvailabilityResponse;
+        setAvailableTables(payload.availableTables);
+
+        if (payload.availableTables.length === 0) {
+          setSelectedTable('');
+          setAvailabilityMessage('No tables available for the selected date/time and party size.');
+          return;
+        }
+
+        setSelectedTable((currentTable) => {
+          const existing = payload.availableTables.find((table) => table.name === currentTable);
+          return existing ? currentTable : payload.availableTables[0].name;
+        });
+
+        setAvailabilityMessage(`${payload.availableTables.length} table(s) available.`);
+      } catch {
+        setAvailableTables([]);
+        setSelectedTable('');
+        setAvailabilityMessage('Network issue while loading availability.');
+      }
+    };
+
+    void loadAvailability();
+  }, [partySize, reservationAtInput]);
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -49,7 +109,7 @@ export const ReservationForm = () => {
 
     const payload = {
       restaurantSlug: String(formData.get('restaurantSlug')),
-      tableName: String(formData.get('tableName')),
+      tableName: selectedTable,
       bookingType: sessionUser && bookingTypeValue === 'guest' ? 'logged_in' : bookingTypeValue,
       guestName: String(formData.get('guestName')),
       guestEmail: sessionUser?.email ?? String(formData.get('guestEmail')),
@@ -86,8 +146,39 @@ export const ReservationForm = () => {
 
   return (
     <form className="form" onSubmit={onSubmit}>
-      <input name="restaurantSlug" placeholder="Restaurant slug" defaultValue="inglo-demo" required />
-      <input name="tableName" placeholder="Table name" defaultValue="T1" required />
+      <input name="restaurantSlug" placeholder="Restaurant slug" defaultValue="inglo-demo" required readOnly />
+
+      <input
+        name="partySize"
+        type="number"
+        min={1}
+        max={20}
+        defaultValue={2}
+        required
+        onChange={(event) => setPartySize(Number(event.target.value))}
+      />
+
+      <input
+        name="reservationAt"
+        type="datetime-local"
+        defaultValue={defaultDatetime}
+        required
+        onChange={(event) => setReservationAtInput(event.target.value)}
+      />
+
+      <select name="tableName" value={selectedTable} onChange={(event) => setSelectedTable(event.target.value)} required>
+        {availableTables.length === 0 ? (
+          <option value="">No table available</option>
+        ) : null}
+        {availableTables.map((table) => (
+          <option key={table.id} value={table.name}>
+            {table.name} (capacity {table.capacity})
+          </option>
+        ))}
+      </select>
+
+      <p>{availabilityMessage}</p>
+
       <select name="bookingType" defaultValue={sessionUser ? 'logged_in' : bookingTypes[0]}>
         {bookingTypes.map((type) => (
           <option key={type} value={type}>
@@ -95,6 +186,7 @@ export const ReservationForm = () => {
           </option>
         ))}
       </select>
+
       <input name="guestName" placeholder="Guest full name" required />
       <input
         name="guestEmail"
@@ -104,12 +196,13 @@ export const ReservationForm = () => {
         readOnly={Boolean(sessionUser?.email)}
         required
       />
-      <input name="partySize" type="number" min={1} max={20} defaultValue={2} required />
-      <input name="reservationAt" type="datetime-local" defaultValue={defaultDatetime} required />
+
       <input name="notes" placeholder="Optional notes" />
-      <button disabled={isSubmitting} type="submit">
+
+      <button disabled={isSubmitting || !selectedTable} type="submit">
         {isSubmitting ? 'Confirming...' : 'Confirm reservation'}
       </button>
+
       {sessionUser ? <p>Logged in booking detected. Email is locked to your account.</p> : null}
       {message ? <p>{message}</p> : null}
     </form>

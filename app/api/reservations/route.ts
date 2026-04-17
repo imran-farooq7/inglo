@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { reservationInputSchema } from '@/lib/reservation-schema';
+import { canCreateReservation } from '@/lib/availability';
 
 const getTableForRestaurant = async (restaurantSlug: string, tableName: string) =>
   prisma.table.findFirst({
@@ -30,6 +31,30 @@ export const POST = async (request: NextRequest) => {
 
   if (!table) {
     return NextResponse.json({ error: 'Table not found for restaurant.' }, { status: 404 });
+  }
+
+  if (payload.partySize > table.capacity) {
+    return NextResponse.json(
+      { error: `Selected table capacity (${table.capacity}) is lower than party size (${payload.partySize}).` },
+      { status: 409 },
+    );
+  }
+
+  const availability = await canCreateReservation({
+    restaurantSlug: payload.restaurantSlug,
+    reservationAtIso: payload.reservationAt,
+    partySize: payload.partySize,
+    requestedTableName: payload.tableName,
+  });
+
+  if (!availability.canReserveRequestedTable) {
+    return NextResponse.json(
+      {
+        error: 'Requested table is unavailable for this time window.',
+        availableTables: availability.availableTables,
+      },
+      { status: 409 },
+    );
   }
 
   const reservation = await prisma.reservation.create({

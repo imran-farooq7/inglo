@@ -1,6 +1,6 @@
-# Latest API references used for Modules 1 + 2
+# Latest API references used for Modules 1 + 2 + 3
 
-Checked against official docs for the APIs used in the current implementation:
+Checked against official docs for APIs used in the current implementation:
 
 - Next.js App Router
   - Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
@@ -9,15 +9,12 @@ Checked against official docs for the APIs used in the current implementation:
 - Supabase (Next.js SSR + Auth)
   - Creating a client (Next.js): https://supabase.com/docs/guides/auth/server-side/creating-a-client?queryGroups=framework&framework=nextjs
   - Next.js SSR auth guide: https://supabase.com/docs/guides/auth/server-side/nextjs
-  - JavaScript auth sign-in: https://supabase.com/docs/reference/javascript/auth-signinwithpassword
-  - JavaScript auth sign-up: https://supabase.com/docs/reference/javascript/auth-signup
-  - JavaScript auth sign-out: https://supabase.com/docs/reference/javascript/auth-signout
 - Prisma ORM 7
   - Upgrade guide: https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7
   - Prisma schema overview: https://www.prisma.io/docs/orm/prisma-schema/overview
-  - CRUD with Prisma Client: https://www.prisma.io/docs/orm/prisma-client/queries/crud
+  - Filtering and sorting queries: https://www.prisma.io/docs/orm/prisma-client/queries/filtering-and-sorting
 
-## Module 2-specific updates
-- Added server-action based auth flows (`signIn`, `signUp`, `signOut`).
-- Added protected SSR dashboard route.
-- Added client-safe session endpoint (`/api/auth/user`) for booking UX personalization.
+## Module 3-specific updates
+- Added a dedicated availability engine in `lib/availability.ts`.
+- Added `/api/availability` for live table lookup.
+- Added overlap protection + capacity guard on reservation creation.

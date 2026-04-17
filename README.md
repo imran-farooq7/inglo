@@ -1,44 +1,37 @@
 # Inglo Smart Reservations (Module-Based Build)
 
-## Progress summary before Module 2
-- ✅ Module 1 completed:
-  - Next.js App Router + TypeScript foundation
-  - Marketing homepage (`/`)
-  - Reservation page (`/reservations`)
-  - Reservation API (`GET` + `POST`)
-  - Prisma schema + seed data
-  - Prisma 7 + Supabase SSR baseline setup
+## Progress summary before Module 3
+- ✅ Module 1 completed: foundation, marketing, reservations API, Prisma and Supabase baseline.
+- ✅ Module 2 completed: Supabase auth flows, protected dashboard, auth-aware reservation UX.
 
-## Progress summary after Module 2
-- ✅ Supabase auth flows (sign up, sign in, sign out) via Server Actions.
-- ✅ Protected dashboard route (`/dashboard`) with SSR user guard.
-- ✅ App-level auth-aware navigation (`AuthStatus`) in layout.
-- ✅ Session-aware reservation form (auto-upgrades booking type to logged-in when authenticated).
-- ✅ Auth session endpoint (`/api/auth/user`) for client-safe session context.
+## Progress summary after Module 3
+- ✅ Smart availability engine with fixed reservation windows.
+- ✅ Conflict detection to prevent overlapping reservations on the same table.
+- ✅ Availability API endpoint (`/api/availability`) for real-time table lookup.
+- ✅ Reservation API now rejects double-bookings and capacity mismatches.
+- ✅ Reservation form now loads/updates available tables by party size + datetime.
 
 ---
 
 ## Structure and where each component is used
 
-- `app/layout.tsx`
-  - Global app shell + top navigation.
-  - Renders `AuthStatus` in every page.
-- `components/auth/auth-status.tsx`
-  - Server component that shows auth links for guests and dashboard/sign-out for signed-in users.
-- `app/auth/actions.ts`
-  - Server Actions for `signInAction`, `signUpAction`, `signOutAction`.
-- `app/auth/sign-in/page.tsx`
-  - Sign-in page route using reusable `AuthForm`.
-- `app/auth/sign-up/page.tsx`
-  - Sign-up page route using reusable `AuthForm`.
-- `components/auth/auth-form.tsx`
-  - Shared auth UI component for both sign-in and sign-up pages.
-- `app/dashboard/page.tsx`
-  - Protected SSR page; redirects unauthenticated users to sign-in.
-- `app/api/auth/user/route.ts`
-  - Returns lightweight authenticated user payload for client components.
+- `lib/availability.ts`
+  - Core functional availability logic:
+    - computes 2-hour windows,
+    - finds overlapping reservations,
+    - returns available/unavailable tables,
+    - checks if requested table can be reserved.
+- `app/api/availability/route.ts`
+  - Read endpoint for frontend availability queries.
+- `app/api/reservations/route.ts`
+  - Create endpoint now enforces capacity + overlap safety via availability module.
 - `components/reservation-form.tsx`
-  - Uses `/api/auth/user` to detect user session and adapt booking defaults.
+  - Client flow for live availability:
+    - query `/api/availability` when date/party changes,
+    - render only available tables,
+    - prevent submit when no table is available.
+
+(Everything from Modules 1 and 2 remains active, including auth, dashboard, and marketing pages.)
 
 ---
 
@@ -46,7 +39,7 @@
 
 1. ✅ Module 1: foundation, marketing pages, reservation CRUD entrypoint.
 2. ✅ Module 2: authentication (guest vs logged-in), Supabase auth flows.
-3. ⏳ Module 3: smart table availability engine and conflict checking.
+3. ✅ Module 3: smart table availability engine and conflict checking.
 4. ⏳ Module 4: restaurant dashboard reservation calendar/table management.
 5. ⏳ Module 5: role-based staff tools and premium booking rules.
 6. ⏳ Module 6: analytics and optimization suggestions.
@@ -63,23 +56,18 @@
    ```bash
    cp .env.example .env
    ```
-3. Add this optional redirect URL setting for auth emails:
-   ```bash
-   NEXT_PUBLIC_SITE_URL="http://localhost:3000"
-   ```
-4. Run Prisma generate + migration + seed:
+3. Run Prisma generate + migration + seed:
    ```bash
    npm run prisma:generate
    npm run prisma:migrate
    npm run prisma:seed
    ```
-5. Start app:
+4. Start app:
    ```bash
    npm run dev
    ```
 
 Open:
 - `http://localhost:3000/`
-- `http://localhost:3000/auth/sign-in`
-- `http://localhost:3000/auth/sign-up`
+- `http://localhost:3000/reservations`
 - `http://localhost:3000/dashboard`
