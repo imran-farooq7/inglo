@@ -70,7 +70,6 @@ export const ReservationForm = () => {
         });
 
         const response = await fetch(`/api/availability?${query.toString()}`);
-        console.log(response, "from api");
 
         if (!response.ok) {
           setAvailableTables([]);
