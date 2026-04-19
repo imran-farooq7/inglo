@@ -1,37 +1,32 @@
 # Inglo Smart Reservations (Module-Based Build)
 
-## Progress summary before Module 3
+## Progress summary before Module 4
 - ✅ Module 1 completed: foundation, marketing, reservations API, Prisma and Supabase baseline.
 - ✅ Module 2 completed: Supabase auth flows, protected dashboard, auth-aware reservation UX.
+- ✅ Module 3 completed: smart availability engine with overlap/capacity protections.
 
-## Progress summary after Module 3
-- ✅ Smart availability engine with fixed reservation windows.
-- ✅ Conflict detection to prevent overlapping reservations on the same table.
-- ✅ Availability API endpoint (`/api/availability`) for real-time table lookup.
-- ✅ Reservation API now rejects double-bookings and capacity mismatches.
-- ✅ Reservation form now loads/updates available tables by party size + datetime.
+## Progress summary after Module 4
+- ✅ Dashboard reservation board with date filter.
+- ✅ Table-based reservation management view.
+- ✅ Reservation status lifecycle controls (`confirmed -> seated -> completed`, plus `cancelled`).
+- ✅ Dashboard API for daily reservations and table metadata.
 
 ---
 
 ## Structure and where each component is used
 
-- `lib/availability.ts`
-  - Core functional availability logic:
-    - computes 2-hour windows,
-    - finds overlapping reservations,
-    - returns available/unavailable tables,
-    - checks if requested table can be reserved.
-- `app/api/availability/route.ts`
-  - Read endpoint for frontend availability queries.
-- `app/api/reservations/route.ts`
-  - Create endpoint now enforces capacity + overlap safety via availability module.
-- `components/reservation-form.tsx`
-  - Client flow for live availability:
-    - query `/api/availability` when date/party changes,
-    - render only available tables,
-    - prevent submit when no table is available.
+- `app/api/dashboard/reservations/route.ts`
+  - `GET`: returns daily reservations + active tables for dashboard.
+  - `PATCH`: updates reservation status.
+- `components/dashboard/reservation-board.tsx`
+  - Client dashboard board:
+    - loads daily data,
+    - groups reservations by table,
+    - supports status transitions and cancellation.
+- `app/dashboard/page.tsx`
+  - Protected SSR page that renders operations summary + reservation board.
 
-(Everything from Modules 1 and 2 remains active, including auth, dashboard, and marketing pages.)
+(Modules 1–3 remain active: auth, availability API, reservation API, and marketing/reservations flows.)
 
 ---
 
@@ -40,7 +35,7 @@
 1. ✅ Module 1: foundation, marketing pages, reservation CRUD entrypoint.
 2. ✅ Module 2: authentication (guest vs logged-in), Supabase auth flows.
 3. ✅ Module 3: smart table availability engine and conflict checking.
-4. ⏳ Module 4: restaurant dashboard reservation calendar/table management.
+4. ✅ Module 4: restaurant dashboard reservation calendar/table management.
 5. ⏳ Module 5: role-based staff tools and premium booking rules.
 6. ⏳ Module 6: analytics and optimization suggestions.
 

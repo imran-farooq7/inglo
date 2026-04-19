@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { ReservationBoard } from '@/components/dashboard/reservation-board';
 
 const DashboardPage = async () => {
   const supabase = await createClient();
@@ -12,15 +13,18 @@ const DashboardPage = async () => {
   }
 
   return (
-    <section className="section">
-      <h1>Dashboard</h1>
-      <p className="subtitle">Welcome back, {user.email}.</p>
-      <div className="badges">
-        <span className="badge">Role: staff-ready</span>
-        <span className="badge">Auth: Supabase SSR</span>
-        <span className="badge">Module 2 complete</span>
-      </div>
-    </section>
+    <>
+      <section className="section">
+        <h1>Operations Dashboard</h1>
+        <p className="subtitle">Welcome back, {user.email}. Manage daily floor flow below.</p>
+        <div className="badges">
+          <span className="badge">Module 4 active</span>
+          <span className="badge">Table board</span>
+          <span className="badge">Status controls</span>
+        </div>
+      </section>
+      <ReservationBoard />
+    </>
   );
 };
 

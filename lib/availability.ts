@@ -1,17 +1,11 @@
-import prisma from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { prisma } from '@/lib/prisma';
 
 const RESERVATION_DURATION_MINUTES = 120;
 
-const addMinutes = (date: Date, minutes: number) =>
-  new Date(date.getTime() + minutes * 60_000);
+const addMinutes = (date: Date, minutes: number) => new Date(date.getTime() + minutes * 60_000);
 
-const overlapsWindow = (
-  candidateStart: Date,
-  candidateEnd: Date,
-  existingStart: Date,
-  existingEnd: Date,
-) => candidateStart < existingEnd && existingStart < candidateEnd;
+const overlapsWindow = (candidateStart: Date, candidateEnd: Date, existingStart: Date, existingEnd: Date) =>
+  candidateStart < existingEnd && existingStart < candidateEnd;
 
 const getReservationWindow = (reservationAt: Date) => ({
   start: reservationAt,
@@ -22,7 +16,7 @@ const getRequestedWindow = (reservationAtIso: string) => {
   const start = new Date(reservationAtIso);
 
   if (Number.isNaN(start.getTime())) {
-    throw new Error("Invalid reservation date.");
+    throw new Error('Invalid reservation date.');
   }
 
   return {
@@ -37,24 +31,10 @@ type AvailabilityInput = {
   partySize: number;
 };
 
-type RestaurantWithTables = Prisma.RestaurantGetPayload<{
-  include: { tables: true };
-}>;
-
-type NearbyReservation = Prisma.ReservationGetPayload<{
-  select: { tableId: true; reservationAt: true };
-}>;
-
-type RestaurantTable = RestaurantWithTables["tables"][number];
-
-export const getAvailableTables = async ({
-  restaurantSlug,
-  reservationAtIso,
-  partySize,
-}: AvailabilityInput) => {
+export const getAvailableTables = async ({ restaurantSlug, reservationAtIso, partySize }: AvailabilityInput) => {
   const requested = getRequestedWindow(reservationAtIso);
 
-  const restaurant: RestaurantWithTables | null = await prisma.restaurant.findUnique({
+  const restaurant = await prisma.restaurant.findUnique({
     where: { slug: restaurantSlug },
     include: {
       tables: {
@@ -62,25 +42,21 @@ export const getAvailableTables = async ({
           isActive: true,
           capacity: { gte: partySize },
         },
-        orderBy: [{ capacity: "asc" }, { name: "asc" }],
+        orderBy: [{ capacity: 'asc' }, { name: 'asc' }],
       },
     },
   });
 
   if (!restaurant) {
-    return {
-      availableTables: [],
-      unavailableTables: [],
-      restaurantFound: false,
-    };
+    return { availableTables: [], unavailableTables: [], restaurantFound: false };
   }
 
-  const tableIds = restaurant.tables.map((table: RestaurantTable) => table.id);
+  const tableIds = restaurant.tables.map((table) => table.id);
 
-  const nearbyReservations: NearbyReservation[] = await prisma.reservation.findMany({
+  const nearbyReservations = await prisma.reservation.findMany({
     where: {
       tableId: { in: tableIds },
-      status: { notIn: ["cancelled", "completed"] },
+      status: { notIn: ['cancelled', 'completed'] },
       reservationAt: {
         gte: addMinutes(requested.start, -RESERVATION_DURATION_MINUTES),
         lte: addMinutes(requested.end, RESERVATION_DURATION_MINUTES),
@@ -94,24 +70,15 @@ export const getAvailableTables = async ({
 
   const conflictTableIds = new Set(
     nearbyReservations
-      .filter((reservation: NearbyReservation) => {
+      .filter((reservation) => {
         const existing = getReservationWindow(reservation.reservationAt);
-        return overlapsWindow(
-          requested.start,
-          requested.end,
-          existing.start,
-          existing.end,
-        );
+        return overlapsWindow(requested.start, requested.end, existing.start, existing.end);
       })
-      .map((reservation: NearbyReservation) => reservation.tableId),
+      .map((reservation) => reservation.tableId),
   );
 
-  const availableTables = restaurant.tables.filter(
-    (table: RestaurantTable) => !conflictTableIds.has(table.id),
-  );
-  const unavailableTables = restaurant.tables.filter((table: RestaurantTable) =>
-    conflictTableIds.has(table.id),
-  );
+  const availableTables = restaurant.tables.filter((table) => !conflictTableIds.has(table.id));
+  const unavailableTables = restaurant.tables.filter((table) => conflictTableIds.has(table.id));
 
   return {
     restaurantFound: true,
@@ -126,15 +93,9 @@ export const canCreateReservation = async ({
   partySize,
   requestedTableName,
 }: AvailabilityInput & { requestedTableName: string }) => {
-  const availability = await getAvailableTables({
-    restaurantSlug,
-    reservationAtIso,
-    partySize,
-  });
+  const availability = await getAvailableTables({ restaurantSlug, reservationAtIso, partySize });
 
-  const table = availability.availableTables.find(
-    (item: RestaurantTable) => item.name === requestedTableName,
-  );
+  const table = availability.availableTables.find((item) => item.name === requestedTableName);
 
   return {
     ...availability,
