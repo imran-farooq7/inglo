@@ -1,32 +1,39 @@
 # Inglo Smart Reservations (Module-Based Build)
 
-## Progress summary before Module 4
+## Progress summary before Module 5
 - ✅ Module 1 completed: foundation, marketing, reservations API, Prisma and Supabase baseline.
-- ✅ Module 2 completed: Supabase auth flows, protected dashboard, auth-aware reservation UX.
+- ✅ Module 2 completed: Supabase auth flows and protected account-aware UX.
 - ✅ Module 3 completed: smart availability engine with overlap/capacity protections.
+- ✅ Module 4 completed: dashboard reservation board + status lifecycle actions.
 
-## Progress summary after Module 4
-- ✅ Dashboard reservation board with date filter.
-- ✅ Table-based reservation management view.
-- ✅ Reservation status lifecycle controls (`confirmed -> seated -> completed`, plus `cancelled`).
-- ✅ Dashboard API for daily reservations and table metadata.
+## Progress summary after Module 5
+- ✅ Role-based access checks for staff tools.
+- ✅ Dashboard APIs are now staff-only.
+- ✅ Dashboard page now redirects non-staff users away from staff operations.
+- ✅ Reservation API enforces booking-type rules:
+  - `staff` booking type requires staff role,
+  - `premium` booking type requires premium membership + lead-time rule.
+- ✅ Session API now returns role + premium flags for client feature gating.
 
 ---
 
 ## Structure and where each component is used
 
+- `lib/roles.ts`
+  - Role and membership policy module:
+    - resolves role from email,
+    - checks premium membership,
+    - validates premium lead-time policy.
+- `app/api/auth/user/route.ts`
+  - Returns `{ user, role, premium }` for client components.
 - `app/api/dashboard/reservations/route.ts`
-  - `GET`: returns daily reservations + active tables for dashboard.
-  - `PATCH`: updates reservation status.
-- `components/dashboard/reservation-board.tsx`
-  - Client dashboard board:
-    - loads daily data,
-    - groups reservations by table,
-    - supports status transitions and cancellation.
+  - Staff-only dashboard data and reservation status update endpoints.
+- `app/api/reservations/route.ts`
+  - Reservation creation now enforces staff/premium booking-type rules.
 - `app/dashboard/page.tsx`
-  - Protected SSR page that renders operations summary + reservation board.
-
-(Modules 1–3 remain active: auth, availability API, reservation API, and marketing/reservations flows.)
+  - Staff-only page guard.
+- `components/reservation-form.tsx`
+  - Booking type options are role-aware (staff/premium gating in UI).
 
 ---
 
@@ -36,8 +43,21 @@
 2. ✅ Module 2: authentication (guest vs logged-in), Supabase auth flows.
 3. ✅ Module 3: smart table availability engine and conflict checking.
 4. ✅ Module 4: restaurant dashboard reservation calendar/table management.
-5. ⏳ Module 5: role-based staff tools and premium booking rules.
+5. ✅ Module 5: role-based staff tools and premium booking rules.
 6. ⏳ Module 6: analytics and optimization suggestions.
+
+---
+
+## Environment configuration
+
+Add these optional role/premium policy variables to `.env`:
+
+```bash
+STAFF_EMAILS="manager@inglo.app,ops@inglo.app"
+STAFF_EMAIL_DOMAIN="inglo.app"
+PREMIUM_MEMBER_EMAILS="vip1@example.com,vip2@example.com"
+PREMIUM_MIN_LEAD_HOURS="4"
+```
 
 ---
 

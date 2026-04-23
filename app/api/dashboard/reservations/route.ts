@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
+import { getUserRoleFromEmail } from '@/lib/roles';
+
+const ensureStaff = async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const role = getUserRoleFromEmail(user?.email);
+
+  if (!user || role !== 'staff') {
+    return false;
+  }
+
+  return true;
+};
 
 const getDateRange = (dateString?: string | null) => {
   const base = dateString ? new Date(`${dateString}T00:00:00.000Z`) : new Date();
@@ -18,6 +35,12 @@ const getDateRange = (dateString?: string | null) => {
 };
 
 export const GET = async (request: NextRequest) => {
+  const allowed = await ensureStaff();
+
+  if (!allowed) {
+    return NextResponse.json({ error: 'Staff access required.' }, { status: 403 });
+  }
+
   const restaurantSlug = request.nextUrl.searchParams.get('restaurantSlug') ?? 'inglo-demo';
   const date = request.nextUrl.searchParams.get('date');
 
@@ -63,6 +86,12 @@ export const GET = async (request: NextRequest) => {
 };
 
 export const PATCH = async (request: NextRequest) => {
+  const allowed = await ensureStaff();
+
+  if (!allowed) {
+    return NextResponse.json({ error: 'Staff access required.' }, { status: 403 });
+  }
+
   const body = (await request.json()) as { reservationId?: string; status?: string };
 
   if (!body.reservationId || !body.status) {

@@ -13,6 +13,12 @@ type SessionUser = {
   email?: string;
 };
 
+type SessionContext = {
+  user: SessionUser | null;
+  role: 'guest' | 'customer' | 'staff';
+  premium: boolean;
+};
+
 type AvailabilityTable = {
   id: string;
   name: string;
@@ -30,6 +36,8 @@ export const ReservationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [sessionRole, setSessionRole] = useState<'guest' | 'customer' | 'staff'>('guest');
+  const [isPremiumMember, setIsPremiumMember] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] = useState('');
   const [availableTables, setAvailableTables] = useState<AvailabilityTable[]>([]);
   const [selectedTable, setSelectedTable] = useState('');
@@ -48,10 +56,14 @@ export const ReservationForm = () => {
     const loadSession = async () => {
       try {
         const response = await fetch('/api/auth/user');
-        const payload = (await response.json()) as { user: SessionUser | null };
+        const payload = (await response.json()) as SessionContext;
         setSessionUser(payload.user);
+        setSessionRole(payload.role);
+        setIsPremiumMember(payload.premium);
       } catch {
         setSessionUser(null);
+        setSessionRole('guest');
+        setIsPremiumMember(false);
       }
     };
 
@@ -180,11 +192,17 @@ export const ReservationForm = () => {
       <p>{availabilityMessage}</p>
 
       <select name="bookingType" defaultValue={sessionUser ? 'logged_in' : bookingTypes[0]}>
-        {bookingTypes.map((type) => (
-          <option key={type} value={type}>
-            {type}
-          </option>
-        ))}
+        {bookingTypes.map((type) => {
+          const disabled =
+            (type === 'staff' && sessionRole !== 'staff') ||
+            (type === 'premium' && !isPremiumMember);
+
+          return (
+            <option key={type} value={type} disabled={disabled}>
+              {type}
+            </option>
+          );
+        })}
       </select>
 
       <input name="guestName" placeholder="Guest full name" required />
@@ -204,6 +222,8 @@ export const ReservationForm = () => {
       </button>
 
       {sessionUser ? <p>Logged in booking detected. Email is locked to your account.</p> : null}
+      {sessionRole === 'staff' ? <p>Staff tools enabled: you can create staff bookings.</p> : null}
+      {sessionUser && !isPremiumMember ? <p>Premium booking requires premium membership enrollment.</p> : null}
       {message ? <p>{message}</p> : null}
     </form>
   );

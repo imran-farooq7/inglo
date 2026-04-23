@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { reservationInputSchema } from '@/lib/reservation-schema';
 import { canCreateReservation } from '@/lib/availability';
+import { createClient } from '@/lib/supabase/server';
+import { canUsePremiumBooking, getUserRoleFromEmail } from '@/lib/roles';
 
 const getTableForRestaurant = async (restaurantSlug: string, tableName: string) =>
   prisma.table.findFirst({
@@ -11,6 +13,18 @@ const getTableForRestaurant = async (restaurantSlug: string, tableName: string) 
     },
     include: { restaurant: true },
   });
+
+const getAuthContext = async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return {
+    user,
+    role: getUserRoleFromEmail(user?.email),
+  };
+};
 
 export const POST = async (request: NextRequest) => {
   const body = await request.json();
@@ -27,6 +41,23 @@ export const POST = async (request: NextRequest) => {
   }
 
   const payload = parsedResult.data;
+  const auth = await getAuthContext();
+
+  if (payload.bookingType === 'staff' && auth.role !== 'staff') {
+    return NextResponse.json({ error: 'Staff booking type requires a staff account.' }, { status: 403 });
+  }
+
+  if (payload.bookingType === 'premium') {
+    const premiumAccess = canUsePremiumBooking({
+      email: auth.user?.email,
+      reservationAt: new Date(payload.reservationAt),
+    });
+
+    if (!premiumAccess.allowed) {
+      return NextResponse.json({ error: premiumAccess.reason }, { status: 403 });
+    }
+  }
+
   const table = await getTableForRestaurant(payload.restaurantSlug, payload.tableName);
 
   if (!table) {
