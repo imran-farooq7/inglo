@@ -86,3 +86,23 @@ Open:
 - `http://localhost:3000/`
 - `http://localhost:3000/reservations`
 - `http://localhost:3000/dashboard`
+
+
+## Analytics snapshot generation
+
+Use the internal staff-only API to create or rebuild daily KPI snapshots for a restaurant over a date range.
+
+```bash
+curl -X POST http://localhost:3000/api/analytics/snapshots \
+  -H "Content-Type: application/json" \
+  -d '{
+    "restaurantSlug": "inglo-demo",
+    "startDate": "2026-05-01",
+    "endDate": "2026-05-07"
+  }'
+```
+
+Notes:
+- `startDate` and `endDate` must be `YYYY-MM-DD` in UTC.
+- The endpoint upserts snapshots so rerunning safely rebuilds existing rows.
+- Access is restricted to staff users.
