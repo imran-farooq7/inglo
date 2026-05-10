@@ -65,3 +65,24 @@ model Reservation {
   @@index([restaurantId, reservationAt])
   @@index([tableId, reservationAt])
 }
+
+
+model DailyKpiSnapshot {
+  id                   String   @id @default(cuid())
+  restaurantId         String
+  restaurant           Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  date                 DateTime
+  totalReservations    Int
+  confirmedCount       Int
+  seatedCount          Int
+  completedCount       Int
+  cancelledCount       Int
+  noShowCount          Int      @default(0)
+  avgPartySize         Float
+  bookingTypeBreakdown Json
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([restaurantId, date])
+  @@index([restaurantId, date])
+}
