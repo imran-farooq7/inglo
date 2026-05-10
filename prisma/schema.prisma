@@ -22,14 +22,15 @@ enum ReservationStatus {
 }
 
 model Restaurant {
-  id           String        @id @default(cuid())
-  slug         String        @unique
-  name         String
-  timezone     String        @default("UTC")
-  tables       Table[]
-  reservations Reservation[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                String             @id @default(cuid())
+  slug              String             @unique
+  name              String
+  timezone          String             @default("UTC")
+  tables            Table[]
+  reservations      Reservation[]
+  dailyKpiSnapshots DailyKpiSnapshot[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model Table {
@@ -66,9 +67,8 @@ model Reservation {
   @@index([tableId, reservationAt])
 }
 
-
 model DailyKpiSnapshot {
-  id                   String   @id @default(cuid())
+  id                   String     @id @default(cuid())
   restaurantId         String
   restaurant           Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   date                 DateTime
@@ -77,11 +77,11 @@ model DailyKpiSnapshot {
   seatedCount          Int
   completedCount       Int
   cancelledCount       Int
-  noShowCount          Int      @default(0)
+  noShowCount          Int        @default(0)
   avgPartySize         Float
   bookingTypeBreakdown Json
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
   @@unique([restaurantId, date])
   @@index([restaurantId, date])
